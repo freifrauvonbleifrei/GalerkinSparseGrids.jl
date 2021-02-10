@@ -141,7 +141,22 @@ function coeffs_DG(::Val{D}, k::Int, n::Int, f::Function,
     end
     return coeffs
 end
-
+function coeffs_DG(D::Int, k::Int, n::Vector{Int}, f::Function;
+        rtol = REL_TOL, atol = ABS_TOL,
+        maxevals=MAX_EVALS,
+        scheme="sparse")
+    coeffs_DG(Val(D), k, n, f, rtol, atol, maxevals, Val(Symbol(scheme)))
+end
+function coeffs_DG(::Val{D}, k::Int, n::Vector{Int}, f::Function,
+                    rtol, atol,
+                    maxevals,
+                    scheme::Val{Scheme}) where {D, Scheme}
+    coeffs    = Dict{CartesianIndex{D}, Array{Array{Float64,D},D}}()
+    modes    = ntuple(i-> k, D)
+    #ls        = ntuple(i->(n+1),D)
+    #ls  = (n1+1, n2+1) #falls D=2, Eingabevariablen n1::Int, n2::Int
+    ls = ntuple(i -> n[i]+1, D)
+end
 
 # -----------------------------------------------------------
 # Reconstruction (full and sparse) in n-D from a Dict of
