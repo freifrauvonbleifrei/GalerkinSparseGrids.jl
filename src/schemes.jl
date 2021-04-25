@@ -25,3 +25,9 @@ end
 function cutoff(::Val{:full}, x::CartesianIndex{D}, n::Int) where {D}
     false
 end
+
+# Same functions but for anisotropic grids
+
+function cutoff(::Val{:full}, x::CartesianIndex{D}, n::Vector{Int}) where {D}
+    false
+end

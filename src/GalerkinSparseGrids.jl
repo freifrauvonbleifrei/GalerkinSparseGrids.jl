@@ -68,7 +68,13 @@ tensor_construct,
 
 wave_evolve_1D,
 wave_evolve,
-vlasov_evolve
+vlasov_evolve,
 
+periodic_pos_DLF_matrix,
+periodic_hier_DLF_matrix,
+periodic_DLF_matrix,
+hier2pos,
+spzeros,
+get_size
 
 end # module

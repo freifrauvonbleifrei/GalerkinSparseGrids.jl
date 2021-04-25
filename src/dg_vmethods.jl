@@ -44,6 +44,21 @@ function get_size(::Val{D}, k::Int, n::Int, scheme::Val{Scheme}=Val(:sparse)) wh
     return size
 end
 
+# Same function but for anisotropic grids #zuvor: scheme::Val{Scheme}=Val(:sparse)
+function get_size(::Val{D}, k::Int, n::Vector{Int}, scheme::Val{Scheme}=Val(:sparse)) where {D, Scheme}
+    #ls      = ntuple(i->(n+1), D)
+    ls      = ntuple(i -> n[i]+1, D)
+    size    = 0
+    for level in CartesianIndices(ls)
+        #cutoff(scheme, level, n) && continue
+        cutoff(Val(:full), level, n) && continue
+
+        ks = ntuple(q -> 1<<max(0, level[q]-2), D)
+        size += prod(ks)*k^D
+    end
+    return size
+end
+
 
 function D2V(d::Int, k::Int, n::Int, coeffs::Dict{CartesianIndex{D}, <:AbstractArray{<:AbstractArray{T, D}, }};
     scheme="sparse") where {D, T <: Real}
@@ -120,6 +135,29 @@ function D2Vref(::Val{D}, k::Int, n::Int, scheme::Val{Scheme}) where {D, Scheme}
     return dict
 end
 
+# Same function but for anisotropic grids
+function D2Vref(::Val{D}, k::Int, n::Vector{Int}, scheme::Val{Scheme}) where {D, Scheme}
+    size        = get_size(Val{D}(), k, n, scheme)
+    dict        = Dict{NTuple{3,CartesianIndex{D}}, Int}()
+    modes        = ntuple(q-> k, D)
+    #ls            = ntuple(i->(n+1), D)
+    ls          = ntuple(i -> n[i]+1, D)
+    j = 1
+    for level in CartesianIndices(ls)
+        cutoff(scheme, level, n) && continue
+
+        ks = ntuple(q -> 1<<max(0, level[q]-2), D)  #This sets up a specific k+1 vector
+        lvl = ntuple(i -> level[i]-1,D)
+        for cell in CartesianIndices(ks)
+            for mode in CartesianIndices(modes)
+                dict[(level, cell, mode)] = j
+                j += 1
+            end
+        end
+    end
+    return dict
+end
+
 function V2Dref(::Val{D}, k::Int, n::Int, scheme::Val{Scheme}) where {D, Scheme}
     size        = get_size(Val{D}(), k, n, scheme)
     vect        = Array{NTuple{3,CartesianIndex{D}}}(undef, size)
@@ -141,6 +179,28 @@ function V2Dref(::Val{D}, k::Int, n::Int, scheme::Val{Scheme}) where {D, Scheme}
     return vect
 end
 
+# Same function but for anisotropic grids
+function V2Dref(::Val{D}, k::Int, n::Vector{Int}, scheme::Val{Scheme}) where {D, Scheme}
+    size        = get_size(Val{D}(), k, n, scheme)
+    vect        = Array{NTuple{3,CartesianIndex{D}}}(undef, size)
+    modes       = ntuple(q-> k, D)
+    #ls            = ntuple(i->(n+1), D)
+    ls          = ntuple(i -> n[i]+1, D)
+    j = 1
+    for level in CartesianIndices(ls)
+        cutoff(scheme, level, n) && continue
+
+        ks = ntuple(q -> 1<<max(0, level[q]-2), D)  #This sets up a specific k+1 vector
+        lvl = ntuple(i -> level[i]-1,D)
+        for cell in CartesianIndices(ks)
+            for mode in CartesianIndices(modes)
+                vect[j] = (level, cell, mode)
+                j += 1
+            end
+        end
+    end
+    return vect
+end
 
 # -----------------------------------------------------
 # Let's now make the coefficient operators work on
@@ -171,6 +231,41 @@ function vcoeffs_DG(::Val{D}, k::Int, n::Int, f::Function,
                 coeffs[j] = get_coefficient_DG(k, lvl, cell, mode, f;
                                                 rtol=rtol, atol=atol,
                                                 maxevals=maxevals)
+                j += 1
+            end
+        end
+    end
+    return coeffs
+end
+
+# Same functions but for anisotropic grids
+
+function vcoeffs_DG(D::Int, k::Int, n::Vector{Int}, f::Function;
+                    rtol=REL_TOL, atol=ABS_TOL,
+                    maxevals=MAX_EVALS,
+                    scheme="sparse")
+    vcoeffs_DG(Val(D), k, n, f, rtol, atol, maxevals, Val(Symbol(scheme)))
+end
+function vcoeffs_DG(::Val{D}, k::Int, n::Vector{Int}, f::Function,
+                    rtol, atol,
+                    maxevals,
+                    scheme::Val{Scheme}) where {D, Scheme}
+    len            = get_size(Val{D}(), k, n, scheme)
+    coeffs        = Array{Float64}(undef, len)
+    modes        = ntuple(i-> k, D)
+    #ls            = ntuple(i-> (n+1), D)
+    ls           = ntuple(i -> n[i]+1, D)
+    j = 1
+    for level in CartesianIndices(ls)  # This really goes from 0 to l_i for each i,
+        cutoff(scheme, level, n) && continue
+
+        ks = ntuple(i -> 1<<max(0, level[i]-2), D)  #This sets up a specific k+1 vector
+        lvl = ntuple(i -> level[i]-1,D)
+        for cell in CartesianIndices(ks)
+            for mode in CartesianIndices(modes)
+                coeffs[j] = get_coefficient_DG(k, lvl, cell, mode, f;
+                                    rtol=rtol, atol=atol,
+                                    maxevals=maxevals)
                 j += 1
             end
         end

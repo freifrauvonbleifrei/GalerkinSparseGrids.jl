@@ -146,3 +146,20 @@ function periodic_DLF_matrix(k::Int, max_level::Int; alpha::Real = 0, basis = "h
         throw(ArgumentError)
     end
 end
+
+# Same function but for anisotropic grids
+function periodic_DLF_matrix(k::Int, max_level::Vector{Int}; alpha::Real = 0, basis = "hier")
+    max_level = maximum(max_level) # Reicht das? Oder muss für jede Dimension einzeln gerechnet werden?
+    if basis == "hier"
+        return periodic_hier_DLF_matrix(k, max_level; alpha=alpha)
+    elseif basis == "pos"
+        return periodic_pos_DLF_matrix(k, max_level; alpha=alpha)
+    elseif basis == "nodal"
+        return periodic_nodal_DLF_matrix(k, max_level; alpha=alpha)
+    elseif basis == "point"
+        #return return periodic_point_DLF_matrix(k, max_level; alpha=alpha) #wieso return zweimal?
+        return periodic_point_DLF_matrix(k, max_level; alpha=alpha)
+    else
+        throw(ArgumentError)
+    end
+end

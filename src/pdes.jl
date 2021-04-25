@@ -69,6 +69,39 @@ function wave_evolve(D::Int, k::Int, n::Int,
     return soln
 end
 
+# Same function but for anisotropic grids
+function wave_evolve(D::Int, k::Int, n::Vector{Int},
+                    f0coeffs::Array{T, 1}, v0coeffs::Array{T, 1},
+                    time0::Real, time1::Real;
+                    order="45", scheme="sparse", kwargs...) where T <: Real
+  
+    laplac   = laplacian_matrix(D, k, n; scheme=scheme)
+
+    RHS, y0 = wave_data(laplac, f0coeffs, v0coeffs)
+    if order == "45"
+        soln = ode45((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    elseif order == "78"
+        soln = ode78((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    else
+        throw(ArgumentError(:order))
+    end
+    return soln
+    # soln_all = []
+    # for i in 1:D
+    #     laplac   = laplacian_matrix(D, k, n[i]; scheme=scheme)
+
+    #     RHS, y0 = wave_data(laplac, f0coeffs, v0coeffs)
+    #     if order == "45"
+    #         soln = ode45((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    #     elseif order == "78"
+    #         soln = ode78((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    #     else
+    #         throw(ArgumentError(:order))
+    #     end
+    #     append!(soln_all, soln)
+    # return soln_all
+end
+
 # Evolves the wave equation from time t0 to t1
 # given initial position profile f0 and velocity profile v0
 function wave_evolve(D::Int, k::Int, n::Int,
@@ -82,6 +115,17 @@ function wave_evolve(D::Int, k::Int, n::Int,
                         order=order, scheme=scheme, kwargs...)
 end
 
+# wave_evolve for anisotropic grids
+function wave_evolve(D::Int, k::Int, n::Vector{Int},
+                                f0::Function, v0::Function,
+                                time0::Real, time1::Real;
+                                order="45", scheme="sparse", kwargs...)
+
+    f0coeffs = vcoeffs_DG(D, k, n, f0; scheme=scheme)
+    v0coeffs = vcoeffs_DG(D, k, n, v0; scheme=scheme)
+    return wave_evolve(D, k, n, f0coeffs, v0coeffs, time0, time1;
+                         order=order, scheme=scheme, kwargs...)
+end
 
 # The reason we have a wave evolution in 1D is to test
 # that the standard "position" and multiresolution "heirarchical"
