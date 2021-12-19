@@ -9,6 +9,7 @@ using ODE
 using Printf
 using SparseArrays
 using StaticArrays
+using Plots
 
 # The following script files are used:
 
@@ -28,6 +29,7 @@ include("multidim_nodal_basis.jl")        # Construct Multidimensional nodal bas
 include("basic_function_exact_coeffs.jl") # Exact coefficients for certain easy functions
 include("error_measure.jl")                # Monte Carlo Methods to measure error
 include("tensor_construct.jl")            # Quickly calculates coeffs of simple tensors of functions
+include("traveling_wave.jl")              # Constructs initial data for traveling wave
 
 export
 
@@ -69,12 +71,14 @@ tensor_construct,
 wave_evolve_1D,
 wave_evolve,
 vlasov_evolve,
+traveling_wave,
 
 periodic_pos_DLF_matrix,
 periodic_hier_DLF_matrix,
 periodic_DLF_matrix,
 hier2pos,
 spzeros,
-get_size
+get_size,
+cutoff
 
 end # module
