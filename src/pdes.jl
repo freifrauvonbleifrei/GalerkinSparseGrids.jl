@@ -43,8 +43,13 @@ function wave_data(laplac::A, f0coeffs::AbstractArray{T, 1},
         push!(J, i+len)
         push!(V, 1.0)
     end
+<<<<<<< HEAD
     println("len = ", len) # to make debugging quicker
     println("max(rows) = ", maximum(rows))
+=======
+    # println("len = ", len) # to make debugging quicker
+    # println("max(rows) = ", maximum(rows))
+>>>>>>> df276d3b7c88a58037c2596400e2dd95b9eecb8d
     RHS = sparse(I, J, V, 2*len, 2*len, +)
     y0 = Array{T}([i<=len ? f0coeffs[i] : v0coeffs[i-len] for i in 1:2*len])
     return RHS, y0
@@ -88,20 +93,6 @@ function wave_evolve(D::Int, k::Int, n::Vector{Int},
         throw(ArgumentError(:order))
     end
     return soln
-    # soln_all = []
-    # for i in 1:D
-    #     laplac   = laplacian_matrix(D, k, n[i]; scheme=scheme)
-
-    #     RHS, y0 = wave_data(laplac, f0coeffs, v0coeffs)
-    #     if order == "45"
-    #         soln = ode45((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
-    #     elseif order == "78"
-    #         soln = ode78((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
-    #     else
-    #         throw(ArgumentError(:order))
-    #     end
-    #     append!(soln_all, soln)
-    # return soln_all
 end
 
 # Evolves the wave equation from time t0 to t1

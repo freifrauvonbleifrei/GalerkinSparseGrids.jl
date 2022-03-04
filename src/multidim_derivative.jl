@@ -76,25 +76,36 @@ function D_matrix(::Val{d}, k::Int, n::Vector{Int}, srefVD::Array{NTuple{3, Cart
 
     # len = length(srefVD[:,1])
     # max_level = maximum(n)
-    n_akt = n[d]+1
+    n_akt = n[d] # +1
+
     len = length(srefVD)
     @assert length(srefVD[:,1]) == length(srefVD)
+    
     V2D_1D = V2Dref(Val(1),k,n_akt,Val(:full)) # Why not 'scheme'? changed from Val(:sparse) to Val(:full) # changed max_level to n
     D2V_1D = D2Vref(Val(1),k,n_akt,Val(:full)) # same here # changed max_level to n
-    if n_akt == 1
+
+    if n_akt == 0
         num_cells = 1
     else
-        num_cells = 2^(n_akt-2)
+        num_cells = 2^(n_akt)
     end
-    # @assert length(V2D_1D) == n_akt*num_cells*k
+    # num_cells = 2^(n_akt) # -1
+    # println("length(D2V_1D) = ", length(D2V_1D))
+    # println("num_cells*k = ", num_cells*k)
+    @assert length(D2V_1D) == num_cells*k #*(n_akt+1)
+
     I = Int[]; J = Int[]; V = Float64[]
 
     # 1-dimensional derivative matrix - this will give all coefficient info
     Dmat_1D = periodic_DLF_matrix(k, n_akt) #in hierarchischer Darstellung mit maximalem level # changed max_level to n
 
+    len_akt = length(V2D_1D)^length(n)
+    @assert length(V2D_1D[:,1]) == length(V2D_1D)
+
+
     for j in 1:len
         lcm = srefVD[j]
-        println(lcm)
+        # println(lcm)
         l = lcm[1][d]
         c = lcm[2][d]
         m = lcm[3][d]
@@ -126,9 +137,10 @@ end
 
 # changed default scheme from sparse to full
 function D_matrix(D::Int, d::Int, k::Int, n::Vector{Int}; scheme="full")
-    max_level = maximum(n)
-    VD = V2Dref(Val(D), k, max_level, Val(Symbol(scheme)))
-    DV = D2Vref(Val(D), k, max_level, Val(Symbol(scheme)))
+    # max_level = maximum(n) # alle D_matrizen sollen die gleich Größe haben
+    # n_akt = n[d]
+    VD = V2Dref(Val(D), k, n, Val(Symbol(scheme)))
+    DV = D2Vref(Val(D), k, n, Val(Symbol(scheme)))
     return D_matrix(d, k, n, VD, DV; scheme=scheme)
 end
 
@@ -149,8 +161,7 @@ end
 
 # Same function but for anisotropic grids
 function laplacian_matrix(D::Int, k::Int, n::Vector{Int}; scheme="full")
-    max_level = maximum(n)
-    len = get_size(Val(D), k, max_level, Val(Symbol(scheme)))
+    len = get_size(Val(D), k, n, Val(Symbol(scheme)))
     lap = spzeros(len, len)
     for i in 1:D
         D_op = D_matrix(D, i, k, n; scheme=scheme)

@@ -36,7 +36,7 @@ function monte_carlo2(f::Function, D::Int; batch = 50, Z = 1.0)
     return mean(means)
 end
 
-function mcerr(f::Function, g::Function, D::Int; count = 1000)
+function mcerr(f::Function, g::Function, D::Int; count = 100000)
     return sqrt(monte_carlo(x->(f(x)-g(x))^2, D; count=count))
 end
 

@@ -87,6 +87,34 @@ function D2V(::Val{D}, k::Int, n::Int, coeffs::Dict{CartesianIndex{D}, <:Abstrac
     return vect
 end
 
+# same function but for anisotropic grids
+function D2V(d::Int, k::Int, n::Vector{Int}, coeffs::Dict{CartesianIndex{D}, <:AbstractArray{<:AbstractArray{T, D}, }};
+    scheme="sparse") where {D, T <: Real}
+    @assert d == D
+    D2V(Val{D}(), k, n, coeffs, Val(Symbol(scheme)))
+end
+function D2V(::Val{D}, k::Int, n::Vector{Int}, coeffs::Dict{CartesianIndex{D}, <:AbstractArray{<:AbstractArray{T, D}, }},
+    scheme::Val{Scheme}) where {D, T <: Real, Scheme}
+
+    size        = get_size(Val{D}(), k, n, scheme)
+    vect        = Array{T}(undef, size)
+    modes       = ntuple(i-> k, D)
+    ls          = ntuple(i->(n[i]+1), D)
+    j = 1
+    for level in CartesianIndices(ls) #This really goes from 0 to l_i for each i
+        cutoff(scheme, level, n) && continue
+
+        ks = ntuple(q -> 1<<max(0, level[q]-2), D) #This sets up a specific k+1 vector
+        for cell in CartesianIndices(ks)
+            for mode in CartesianIndices(modes)
+                vect[j] = coeffs[level][cell][mode]
+                j += 1
+            end
+        end
+    end
+    return vect
+end
+
 
 function V2D(D::Int, k::Int, n::Int, vect::Array{T}; scheme="sparse") where {T <: Real}
     V2D(Val{D}(), k, n, vect, Val(Symbol(scheme)))
@@ -113,6 +141,37 @@ function V2D(::Val{D}, k::Int, n::Int, vect::Array{T}, scheme::Val{Scheme}) wher
     end
     return coeffs
 end
+
+
+# same function but for anisotropic grids
+
+function V2D(D::Int, k::Int, n::Vector{Int}, vect::Array{T}; scheme="sparse") where {T <: Real}
+    V2D(Val{D}(), k, n, vect, Val(Symbol(scheme)))
+end
+function V2D(::Val{D}, k::Int, n::Vector{Int}, vect::Array{T}, scheme::Val{Scheme}) where {D, T <: Real, Scheme}
+    coeffs       = Dict{CartesianIndex{D}, Array{Array{T,D},D}}()
+    modes        = ntuple(q-> k, D)
+    ls           = ntuple(i->(n[i]+1), D)
+    j = 1
+    for level in CartesianIndices(ls) #This really goes from 0 to l_i for each i
+        cutoff(scheme, level, n) && continue
+
+        ks = ntuple(q -> 1<<max(0, level[q]-2), D)  #This sets up a specific k+1 vector
+        level_coeffs = Array{Array{T}}(undef, ks) #all the coefficients at this level
+        for cell in CartesianIndices(ks)
+            cell_coeffs = Array{T}(undef, modes)
+            for mode in CartesianIndices(modes)
+                cell_coeffs[mode] = vect[j]
+                j += 1
+            end
+            level_coeffs[cell] = cell_coeffs
+        end
+        coeffs[level] = level_coeffs
+    end
+    return coeffs
+end
+
+
 
 function D2Vref(::Val{D}, k::Int, n::Int, scheme::Val{Scheme}) where {D, Scheme}
     size        = get_size(Val{D}(), k, n, scheme)
