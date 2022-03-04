@@ -30,8 +30,8 @@ function get_coeffs(D,n)
     return coeffs
 end
 
-function get_test_coeffs(D,n)
-    level = CartesianIndex(ntuple(i->(n-1),D)) #funktioniert nur für gerade n?
+function get_test_coeffs(D,n) #n als Array
+    level = CartesianIndex(ntuple(i->(n[i]-1),D)) #funktioniert nur für gerade n?
     coeffs = Dict()
     coeffs[level] = 1
     return coeffs
@@ -140,7 +140,7 @@ function combine_end(D,k,n,wavenumber,f_result,v_result,t0,t1,generate_coeffs,te
         #mcerr
         err_dict = mcerr(f_exact, f_rep_dict, D)
         # err = mcerr(f_exact, f_rep, D)
-        println("k = ", k, ", n = ", level_n, ", mcerr (dict) = ", err_dict)
+        # println("k = ", k, ", n = ", level_n, ", mcerr (dict) = ", err_dict)
         # println("k = ", k, ", n = ", level_n, ", mcerr (kombiniert) = ", err)
         # append!(err_all_dict, err_dict)
         # append!(err_all, err)
@@ -148,7 +148,7 @@ function combine_end(D,k,n,wavenumber,f_result,v_result,t0,t1,generate_coeffs,te
 
     f_rep = x -> reconstruct_DG(sparsegrid_f, [x...])
     err = mcerr(f_exact, f_rep, D)
-    # println("k = ", k, ", n = ", n, ", mcerr = ", err)
+    println("k = ", k, ", n = ", n, ", mcerr = ", err)
     
     # x = 1:n;
     # plot(x,err_all[1:n],title="Monte Carlo Error",xlabel="n",ylabel="mcerr",label="k=$k")
@@ -207,7 +207,7 @@ t0 = 0
 t1 = 0.54
 
 # get_coeffs(D,n)
-# combine_end(D,k,n,wavenumber,0,0,t0,t1,true,false) #generate_coeffs,test #f0,v0 = 0, since coeffs are generated through travelling_wave
+combine_end(D,k,n,wavenumber,0,0,t0,t1,true,false) #generate_coeffs,test #f0,v0 = 0, since coeffs are generated through travelling_wave
 # println("\nerr2 = ", err2)
 # combine_between(D,k,n,wavenumber,0,0,t0,t1,false) #test::boolean
 # get_test_coeffs(D,n)

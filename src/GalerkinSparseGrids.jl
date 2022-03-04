@@ -31,6 +31,8 @@ include("error_measure.jl")                # Monte Carlo Methods to measure erro
 include("tensor_construct.jl")            # Quickly calculates coeffs of simple tensors of functions
 include("traveling_wave.jl")              # Constructs initial data for traveling wave
 
+include("combination_technique.jl")
+
 export
 
 coeffs_DG,
@@ -79,6 +81,10 @@ periodic_DLF_matrix,
 hier2pos,
 spzeros,
 get_size,
-cutoff
+cutoff,
+
+combine_end,
+combine_between,
+compare
 
 end # module
