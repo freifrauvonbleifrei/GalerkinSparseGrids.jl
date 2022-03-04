@@ -28,7 +28,7 @@ function D_matrix(::Val{d}, k::Int, n::Int, srefVD::Array{NTuple{3, CartesianInd
     I = Int[]; J = Int[]; V = Float64[]
 
     # 1-dimensional derivative matrix - this will give all coefficient info
-    Dmat_1D = periodic_DLF_matrix(k, n)
+    Dmat_1D = periodic_DLF_matrix(k, n) #in hierarchischer Darstellung
 
     for j in 1:len
         lcm = srefVD[j]
@@ -38,7 +38,7 @@ function D_matrix(::Val{d}, k::Int, n::Int, srefVD::Array{NTuple{3, CartesianInd
         j_1D = D2V_1D[(CartesianIndex(l),CartesianIndex(c),CartesianIndex(m))]
         derivs = Dmat_1D[:, j_1D]::SparseVector{Float64,Int}
 
-        for i_1D in derivs.nzind
+        for i_1D in derivs.nzind #1D Matrix auf Zeile der großen Matrix aufteilen (Linearisieren)
             lcm_1D = V2D_1D[i_1D]
             # using tuple constructor independent of Julia's metaprogramming:
             # make_cartesian_index(d, arr1, arr2) takes arr::CartesianIndex{1}
@@ -75,76 +75,60 @@ function D_matrix(::Val{d}, k::Int, n::Vector{Int}, srefVD::Array{NTuple{3, Cart
                 srefDV::Dict{NTuple{3, CartesianIndex{D}}, Int}, scheme::Val{Scheme}) where {d, D, Scheme}
 
     # len = length(srefVD[:,1])
+    # max_level = maximum(n)
+    n_akt = n[d]+1
     len = length(srefVD)
     @assert length(srefVD[:,1]) == length(srefVD)
-    #V2D_1D = V2Dref(Val(1),k,n,Val(:sparse)) # Why not 'scheme'?
-    #D2V_1D = D2Vref(Val(1),k,n,Val(:sparse))
-
-    I_all = Int[]
-    J_all = Int[]
-    V_all = Float64[]
-    # len_all = 0
-    len_all = Int[]
-
-    for a in 1:length(n)
-
-        srefVD = V2Dref(Val(D), k, n[a], scheme) # zuvor Val(Symbol(scheme))
-        srefDV = D2Vref(Val(D), k, n[a], scheme) # zuvor Val(Symbol(scheme))
-        len = length(srefVD)
-        @assert length(srefVD[:,1]) == length(srefVD)
-
-        # len_all += len
-        append!(len_all, len)
-
-        V2D_1D = V2Dref(Val(1),k,n[a],scheme)
-        D2V_1D = D2Vref(Val(1),k,n[a],scheme)
-        I = Int[]; J = Int[]; V = Float64[]
-
-        # 1-dimensional derivative matrix - this will give all coefficient info
-        Dmat_1D = periodic_DLF_matrix(k, n[a]) ##
-
-        for j in 1:len
-            lcm = srefVD[j]
-            l = lcm[1][d]
-            c = lcm[2][d]
-            m = lcm[3][d]
-            j_1D = D2V_1D[(CartesianIndex(l),CartesianIndex(c),CartesianIndex(m))]
-            derivs = Dmat_1D[:, j_1D]::SparseVector{Float64,Int}
-
-            for i_1D in derivs.nzind
-                lcm_1D = V2D_1D[i_1D]
-                # using tuple constructor independent of Julia's metaprogramming:
-                # make_cartesian_index(d, arr1, arr2) takes arr::CartesianIndex{1}
-                # and makes a new CartesianIndex{D} using arr2::CartesianIndex{D}
-                # with the dth value replaced by arr1[1]
-                level2 = make_cartesian_index(d, lcm_1D[1], lcm[1])
-                @assert cutoff(scheme, level2, n) == false
-                cutoff(scheme, level2, n) && continue
-                cell2 = make_cartesian_index(d, lcm_1D[2], lcm[2])
-                mode2 = make_cartesian_index(d, lcm_1D[3], lcm[3])
-                i = srefDV[(level2, cell2, mode2)]
-                push!(I, i)
-                push!(J, j)
-                push!(V, derivs[i_1D])
-            end
-        end
-        append!(I_all,I)
-        append!(J_all,J)
-        append!(V_all,V)
+    V2D_1D = V2Dref(Val(1),k,n_akt,Val(:full)) # Why not 'scheme'? changed from Val(:sparse) to Val(:full) # changed max_level to n
+    D2V_1D = D2Vref(Val(1),k,n_akt,Val(:full)) # same here # changed max_level to n
+    if n_akt == 1
+        num_cells = 1
+    else
+        num_cells = 2^(n_akt-2)
     end
+    # @assert length(V2D_1D) == n_akt*num_cells*k
+    I = Int[]; J = Int[]; V = Float64[]
 
-    # len_avr = len_all / length(n)
-    max_len = maximum(len_all)
-    # println("I_all = ", I_all)
+    # 1-dimensional derivative matrix - this will give all coefficient info
+    Dmat_1D = periodic_DLF_matrix(k, n_akt) #in hierarchischer Darstellung mit maximalem level # changed max_level to n
+
+    for j in 1:len
+        lcm = srefVD[j]
+        println(lcm)
+        l = lcm[1][d]
+        c = lcm[2][d]
+        m = lcm[3][d]
+        j_1D = D2V_1D[(CartesianIndex(l),CartesianIndex(c),CartesianIndex(m))]
+        derivs = Dmat_1D[:, j_1D]::SparseVector{Float64,Int}
+
+        for i_1D in derivs.nzind #1D Matrix auf Zeile der großen Matrix aufteilen (Linearisieren)
+            lcm_1D = V2D_1D[i_1D]
+            # using tuple constructor independent of Julia's metaprogramming:
+            # make_cartesian_index(d, arr1, arr2) takes arr::CartesianIndex{1}
+            # and makes a new CartesianIndex{D} using arr2::CartesianIndex{D}
+            # with the dth value replaced by arr1[1]
+            level2 = make_cartesian_index(d, lcm_1D[1], lcm[1])
+            cutoff(scheme, level2, n) && continue ##cutoff mehrdimensional darstellen
+            # cutoff der D dimensionales n übernimmt also ganzer vektor
+            # aber trotzdem entweder true oder false zurückgeben
+            cell2 = make_cartesian_index(d, lcm_1D[2], lcm[2])
+            mode2 = make_cartesian_index(d, lcm_1D[3], lcm[3])
+            i = srefDV[(level2, cell2, mode2)]
+            push!(I, i)
+            push!(J, j)
+            push!(V, derivs[i_1D])
+        end
+    end
     # dropzeros! does not seem helpful for this matrix:
-    return sparse(I_all, J_all, V_all, max_len, max_len, +)
+    return sparse(I, J, V, len, len, +)
 end
 
 
 # changed default scheme from sparse to full
 function D_matrix(D::Int, d::Int, k::Int, n::Vector{Int}; scheme="full")
-    VD = V2Dref(Val(D), k, n, Val(Symbol(scheme)))
-    DV = D2Vref(Val(D), k, n, Val(Symbol(scheme)))
+    max_level = maximum(n)
+    VD = V2Dref(Val(D), k, max_level, Val(Symbol(scheme)))
+    DV = D2Vref(Val(D), k, max_level, Val(Symbol(scheme)))
     return D_matrix(d, k, n, VD, DV; scheme=scheme)
 end
 
@@ -165,12 +149,14 @@ end
 
 # Same function but for anisotropic grids
 function laplacian_matrix(D::Int, k::Int, n::Vector{Int}; scheme="full")
-    # len = get_size(Val(D), k, n, Val(Symbol(scheme)))
-    # lap = spzeros(len, len)
-    # # for i in 1:D
-    # #     D_op = D_matrix(D, i, k, n; scheme=scheme)
-    # #     lap += D_op * D_op
-    # # end
+    max_level = maximum(n)
+    len = get_size(Val(D), k, max_level, Val(Symbol(scheme)))
+    lap = spzeros(len, len)
+    for i in 1:D
+        D_op = D_matrix(D, i, k, n; scheme=scheme)
+        lap += D_op * D_op
+    end
+    return lap
     # max_n = argmax(n)
     # len = get_size(Val(D), k, n[max_n], Val(Symbol(scheme)))
     # lap = spzeros(len, len)
@@ -178,13 +164,13 @@ function laplacian_matrix(D::Int, k::Int, n::Vector{Int}; scheme="full")
     #     lap += laplacian_matrix(D,k,n[i],scheme=scheme)
     # end
     # return lap
-    lap_all = Float64[]
-    for i in 1:D
-        len = get_size(Val(D), k, n[i], Val(Symbol(scheme)))
-        lap = spzeros(len, len)
-        D_op = D_matrix(D, i, k, n[i]; scheme=scheme) ##
-        lap += D_op * D_op
-        lap_all
-    end
-    return lap_all ##auch wieder liste
+    # lap_all = Float64[]
+    # for i in 1:D
+    #     len = get_size(Val(D), k, n[i], Val(Symbol(scheme)))
+    #     lap = spzeros(len, len)
+    #     D_op = D_matrix(D, i, k, n[i]; scheme=scheme) ##
+    #     lap += D_op * D_op
+    #     lap_all
+    # end
+    # return lap_all ##auch wieder liste
 end

@@ -45,13 +45,13 @@ function get_size(::Val{D}, k::Int, n::Int, scheme::Val{Scheme}=Val(:sparse)) wh
 end
 
 # Same function but for anisotropic grids #zuvor: scheme::Val{Scheme}=Val(:sparse)
-function get_size(::Val{D}, k::Int, n::Vector{Int}, scheme::Val{Scheme}=Val(:sparse)) where {D, Scheme}
+function get_size(::Val{D}, k::Int, n::Vector{Int}, scheme::Val{Scheme}=Val(:full)) where {D, Scheme}
     #ls      = ntuple(i->(n+1), D)
     ls      = ntuple(i -> n[i]+1, D)
     size    = 0
     for level in CartesianIndices(ls)
-        #cutoff(scheme, level, n) && continue
-        cutoff(Val(:full), level, n) && continue
+        cutoff(scheme, level, n) && continue # Caution: cutoff not defined for sparse anisotropic grids
+        # cutoff(Val(:full), level, n) && continue
 
         ks = ntuple(q -> 1<<max(0, level[q]-2), D)
         size += prod(ks)*k^D
@@ -243,7 +243,7 @@ end
 function vcoeffs_DG(D::Int, k::Int, n::Vector{Int}, f::Function;
                     rtol=REL_TOL, atol=ABS_TOL,
                     maxevals=MAX_EVALS,
-                    scheme="sparse")
+                    scheme="full")
     vcoeffs_DG(Val(D), k, n, f, rtol, atol, maxevals, Val(Symbol(scheme)))
 end
 function vcoeffs_DG(::Val{D}, k::Int, n::Vector{Int}, f::Function,

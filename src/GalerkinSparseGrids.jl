@@ -29,6 +29,8 @@ include("basic_function_exact_coeffs.jl") # Exact coefficients for certain easy 
 include("error_measure.jl")                # Monte Carlo Methods to measure error
 include("tensor_construct.jl")            # Quickly calculates coeffs of simple tensors of functions
 
+include("combination_technique.jl")
+
 export
 
 coeffs_DG,
@@ -75,6 +77,7 @@ periodic_hier_DLF_matrix,
 periodic_DLF_matrix,
 hier2pos,
 spzeros,
-get_size
+get_size,
+cutoff
 
 end # module

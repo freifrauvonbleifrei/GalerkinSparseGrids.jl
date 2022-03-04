@@ -43,6 +43,39 @@ function D_matrix(k::Int, level::Int)
     return sparse(I, J, V, k * (1<<level), k * (1<<level), +)
 end
 
+# 1D D_matrix for anisotropic grids
+function D_matrix(k::Int, level::Vector{Int})
+    i = 1
+    I = Int[]
+    J = Int[]
+    V = Float64[]
+    for cell1 in 1:(1<<level) # 1<<level = 1*2^level also Anzahl Zellen bei dem level
+        for mode1 in 1:k
+            j = 1
+            for cell2 in 1:(1<<level)
+                for mode2 in 1:k
+                    val = legvDv(level, cell1, mode1, cell2, mode2) # if cell1=cell2 calculate else 0.0
+                    if abs(val) > 1.0e-15
+                        push!(I, i)
+                        push!(J, j)
+                        push!(V, val)
+                    end
+                    j += 1
+                end
+            end
+            # for mode2 in 1:k
+            #     val = legvDv(level,cell1,mode1,cell1,mode2)
+            #     push!(I, i)
+            #     push!(J, j)
+            #     push!(V, val)
+            #     j += 1
+            # end
+            i += 1
+        end
+    end
+    return sparse(I, J, V, k * (1<<level), k * (1<<level), +)
+end
+
 # -----------------------------------------------------
 # Lax-Friedrichs flux matrix element on Legendre basis
 # For now, use alpha = 0 only
@@ -118,7 +151,7 @@ end
 
 function periodic_nodal_DLF_matrix(k::Int, max_level::Int; alpha::Real = 0)
     n2pos = nodal2pos_1D(k, max_level)
-    m2n = points2nodal_1D(k, max_level)*modal2points_1D(k, max_level)
+    m2n = points2nodal_1D(k, max_level)*nodal2points_1D(k, max_level) #tippfehler modal2points_1D
     pos2m = pos2hier(k, max_level)
     pos2n = m2n * pos2m
     A = periodic_pos_DLF_matrix(k, max_level; alpha = alpha)
