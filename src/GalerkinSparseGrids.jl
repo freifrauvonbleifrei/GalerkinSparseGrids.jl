@@ -33,6 +33,8 @@ include("traveling_wave.jl")              # Constructs initial data for travelin
 
 include("combination_technique.jl")
 
+include("combination_technique.jl")
+
 export
 
 coeffs_DG,
