@@ -40,6 +40,12 @@ function mcerr(f::Function, g::Function, D::Int; count = 100000)
     return sqrt(monte_carlo(x->(f(x)-g(x))^2, D; count=count))
 end
 
+function mcerr_rel(f::Function, g::Function, D::Int; count = 100000)
+    abs_error = sqrt(monte_carlo(x->(f(x)-g(x))^2, D; count=count))
+    truesoln = sqrt(monte_carlo(x->g(x)^2, D; count=count))
+    return abs_error / truesoln
+end
+
 function mcerr2(f::Function, g::Function, D::Int; batch = 50, Z = 1.0)
     return sqrt(monte_carlo2(x->(f(x)-g(x))^2, D; batch = batch, Z = Z))
 end

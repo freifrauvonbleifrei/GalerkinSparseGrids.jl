@@ -17,11 +17,15 @@
 # The accuracy is limited only by functions in other scripts
 # and ODE.jl
 
+using Plots
+using ODE
+
 # Construct the time evolution matrix for the wave equation
 # given a Kaplacian and the initial position and velocity f0, v0
 function wave_data(laplac::A, f0coeffs::AbstractArray{T, 1},
         v0coeffs::AbstractArray{T, 1}) where {A <: AbstractArray, T <: Real}
 
+    @assert length(f0coeffs)==length(v0coeffs) "length(f0coeffs)=/length(v0coeffs)"
     len = length(f0coeffs)
     rows = rowvals(laplac)
     vals = nonzeros(laplac)
@@ -43,8 +47,6 @@ function wave_data(laplac::A, f0coeffs::AbstractArray{T, 1},
         push!(J, i+len)
         push!(V, 1.0)
     end
-    # println("len = ", len) # to make debugging quicker
-    # println("max(rows) = ", maximum(rows))
     RHS = sparse(I, J, V, 2*len, 2*len, +)
     y0 = Array{T}([i<=len ? f0coeffs[i] : v0coeffs[i-len] for i in 1:2*len])
     return RHS, y0
@@ -59,12 +61,15 @@ function wave_evolve(D::Int, k::Int, n::Int,
                               order="45", scheme="sparse", kwargs...) where T <: Real
 
     laplac   = laplacian_matrix(D, k, n; scheme=scheme)
-
     RHS, y0 = wave_data(laplac, f0coeffs, v0coeffs)
     if order == "45"
         soln = ode45((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
     elseif order == "78"
         soln = ode78((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    elseif order == "1"
+        soln = ODE.ode1((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    elseif order == "4"
+        soln = ODE.ode4((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
     else
         throw(ArgumentError(:order))
     end
@@ -78,12 +83,15 @@ function wave_evolve(D::Int, k::Int, n::Vector{Int},
                     order="45", scheme="full", kwargs...) where T <: Real
   
     laplac   = laplacian_matrix(D, k, n; scheme=scheme)
-
     RHS, y0 = wave_data(laplac, f0coeffs, v0coeffs)
     if order == "45"
         soln = ode45((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
     elseif order == "78"
         soln = ode78((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    elseif order == "1"
+        soln = ODE.ode1((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    elseif order == "4"
+        soln = ODE.ode4((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
     else
         throw(ArgumentError(:order))
     end
@@ -146,6 +154,8 @@ function wave_evolve_1D(k::Int, max_level::Int,
         soln = ode45((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
     elseif order == "78"
         soln = ode78((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
+    elseif order == "1"
+        soln = ODE.ode1((t,x)->*(RHS,x), y0, [time0,time1]; kwargs...)
     else
         throw(ArgumentError(:order))
     end
@@ -239,6 +249,8 @@ function vlasov_evolve(D::Int, k::Int, n::Int,
         solver = ode45
     elseif order == "78"
         solver = ode78
+    elseif order == "1"
+        solver = ODE.ode1
     else
         throw(ArgumentError(:order))
     end

@@ -85,6 +85,8 @@ cutoff,
 
 combine_end,
 combine_between,
-compare
+compare,
+get_coeffs,
+mcerr_rel
 
 end # module

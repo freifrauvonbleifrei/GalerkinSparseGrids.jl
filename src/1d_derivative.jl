@@ -43,18 +43,18 @@ function D_matrix(k::Int, level::Int)
     return sparse(I, J, V, k * (1<<level), k * (1<<level), +)
 end
 
-# 1D D_matrix for anisotropic grids
+# D_matrix for anisotropic grids
 function D_matrix(k::Int, level::Vector{Int})
     i = 1
     I = Int[]
     J = Int[]
     V = Float64[]
-    for cell1 in 1:(1<<level) # 1<<level = 1*2^level also Anzahl Zellen bei dem level
+    for cell1 in 1:(1<<level)
         for mode1 in 1:k
             j = 1
             for cell2 in 1:(1<<level)
                 for mode2 in 1:k
-                    val = legvDv(level, cell1, mode1, cell2, mode2) # if cell1=cell2 calculate else 0.0
+                    val = legvDv(level, cell1, mode1, cell2, mode2)
                     if abs(val) > 1.0e-15
                         push!(I, i)
                         push!(J, j)
@@ -63,13 +63,6 @@ function D_matrix(k::Int, level::Vector{Int})
                     j += 1
                 end
             end
-            # for mode2 in 1:k
-            #     val = legvDv(level,cell1,mode1,cell1,mode2)
-            #     push!(I, i)
-            #     push!(J, j)
-            #     push!(V, val)
-            #     j += 1
-            # end
             i += 1
         end
     end
@@ -175,23 +168,6 @@ function periodic_DLF_matrix(k::Int, max_level::Int; alpha::Real = 0, basis = "h
         return periodic_nodal_DLF_matrix(k, max_level; alpha=alpha)
     elseif basis == "point"
         return return periodic_point_DLF_matrix(k, max_level; alpha=alpha)
-    else
-        throw(ArgumentError)
-    end
-end
-
-# Same function but for anisotropic grids
-function periodic_DLF_matrix(k::Int, max_level::Vector{Int}; alpha::Real = 0, basis = "hier")
-    max_level = maximum(max_level) # Reicht das? Oder muss für jede Dimension einzeln gerechnet werden?
-    if basis == "hier"
-        return periodic_hier_DLF_matrix(k, max_level; alpha=alpha)
-    elseif basis == "pos"
-        return periodic_pos_DLF_matrix(k, max_level; alpha=alpha)
-    elseif basis == "nodal"
-        return periodic_nodal_DLF_matrix(k, max_level; alpha=alpha)
-    elseif basis == "point"
-        #return return periodic_point_DLF_matrix(k, max_level; alpha=alpha) #wieso return zweimal?
-        return periodic_point_DLF_matrix(k, max_level; alpha=alpha)
     else
         throw(ArgumentError)
     end

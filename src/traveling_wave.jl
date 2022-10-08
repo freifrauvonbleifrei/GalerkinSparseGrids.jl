@@ -135,8 +135,6 @@ end
 # println("Wave Evolution in ", D, "D.")
 # println("Going to k_max = ", k_max, ", n_max = ", n_max, ":")
 
-# err_all = []
-
 # for k_used in 1:k_max
 #     for n_used in 1:n_max
 #         f0coeffs, v0coeffs = traveling_wave(k_used, n_used, m)
@@ -148,10 +146,3 @@ end
 #         println("(k = ", k_used, ", n = ", n_used, ") : err = ", err)
 #     end
 # end
-
-# # x = 1:k_max*n_max
-# x = 1:n_max
-
-# plot(x,err_all[1:n_max],title="Monte Carlo Error",xlabel="n",ylabel="mcerr",label="k=1")
-# plot!(x,err_all[n_max+1:2*n_max],label="k=2")
-# plot!(x,err_all[2*n_max+1:3*n_max],label="k=3")
