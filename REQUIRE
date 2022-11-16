@@ -4,3 +4,4 @@ HCubature
 ODE
 MKLSparse
 StaticArrays
+Plots
